@@ -8,12 +8,13 @@
 
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-180.png">
-  <meta name="theme-color" content="#f6f6f8" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0b0b0d" media="(prefers-color-scheme: dark)">
+  <link rel="preload" href="assets/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <meta name="theme-color" content="#0a0a0c">
+  <meta name="color-scheme" content="dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Mis Finanzas">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
   <!-- Muestra los errores en pantalla (útil si no puedes abrir la consola) -->
   <script>
@@ -29,73 +30,98 @@
 </head>
 <body>
   <main>
-    <h1>Mis Finanzas</h1>
-
     <!-- ========== REGISTRO ========== -->
     <div id="vista-registro">
       <section class="hero">
-        <span class="hero-label">Balance</span>
+        <h1 class="marca">
+          <span class="marca-logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" focusable="false"><path d="M6 18v-4M12 18V9M18 18V5"></path></svg>
+          </span>
+          Mis Finanzas
+        </h1>
+        <span class="hero-label" id="balance-etiqueta">Balance del mes</span>
         <p id="balance" class="hero-valor">$0</p>
         <div class="hero-fila">
           <div class="chip chip-ingreso">
-            <span>Ingresos</span>
-            <strong id="total-ingresos">$0</strong>
+            <span class="chip-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M17 7L7 17M7 9v8h8"></path></svg>
+            </span>
+            <span class="chip-texto">
+              <span>Ingresos</span>
+              <strong id="total-ingresos">$0</strong>
+            </span>
           </div>
           <div class="chip chip-gasto">
-            <span>Gastos</span>
-            <strong id="total-gastos">$0</strong>
+            <span class="chip-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 17L17 7M9 7h8v8"></path></svg>
+            </span>
+            <span class="chip-texto">
+              <span>Gastos</span>
+              <strong id="total-gastos">$0</strong>
+            </span>
           </div>
+        </div>
+        <p class="hero-ahorro" id="hero-ahorro" hidden></p>
+        <p class="hero-ahorro hero-viaje" id="hero-viaje" hidden></p>
+      </section>
+
+      <!-- Todo lo que tengo: la plata disponible más lo ahorrado -->
+      <section class="tarjeta patrimonio" id="patrimonio" hidden>
+        <span class="patrimonio-etiqueta">Todo lo que tengo</span>
+        <p class="patrimonio-valor" id="patrimonio-total">$0</p>
+        <div class="patrimonio-barra" id="patrimonio-barra" aria-hidden="true">
+          <span class="patrimonio-disponible"></span><span class="patrimonio-ahorrado"></span><span class="patrimonio-viaje"></span>
+        </div>
+        <div class="patrimonio-filas">
+          <div class="patrimonio-fila">
+            <span class="punto punto-disponible" aria-hidden="true"></span>
+            <span>Plata disponible</span>
+            <strong id="patrimonio-disponible">$0</strong>
+          </div>
+          <button type="button" class="patrimonio-fila patrimonio-ir" id="patrimonio-ir-ahorro">
+            <span class="punto punto-ahorrado" aria-hidden="true"></span>
+            <span>Ahorrado</span>
+            <strong id="patrimonio-ahorrado">$0</strong>
+          </button>
+          <button type="button" class="patrimonio-fila patrimonio-ir" id="patrimonio-ir-viaje" hidden>
+            <span class="punto punto-viaje" aria-hidden="true"></span>
+            <span>En el viaje</span>
+            <strong id="patrimonio-viaje">$0</strong>
+          </button>
+        </div>
+        <p class="ayuda patrimonio-ayuda">Disponible = ingresos − gastos − lo que pasaste al ahorro o llevaste de viaje, en todo tu historial.</p>
+      </section>
+
+      <section>
+        <h2 id="titulo-movimientos" tabindex="-1">Movimientos</h2>
+        <p class="ayuda" id="ayuda-lista" hidden>Toca un movimiento para editarlo o eliminarlo.</p>
+        <ul id="lista"></ul>
+
+        <!-- Primer uso: la lista vacía invita a registrar -->
+        <div id="primer-uso" class="primer-uso" hidden>
+          <p class="primer-uso-titulo">Anota tu primer gasto</p>
+          <p class="ayuda">Monto y categoría bastan. El balance del mes se arma solo a medida que registras.</p>
+          <button type="button" class="btn-principal" id="btn-primer">Registrar un gasto</button>
         </div>
       </section>
 
       <button type="button" id="aviso-respaldo" class="aviso" hidden>
-        Haz un respaldo de tus datos para no perderlos →
+        <span>
+          <strong id="aviso-respaldo-titulo"></strong>
+          <span class="aviso-texto">Guarda una copia por si cambias de teléfono o se borran los datos.</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"></path></svg>
       </button>
-
-      <form id="formulario">
-        <div class="tipo">
-          <label>
-            <input type="radio" name="tipo" value="gasto" checked>
-            <span>Gasto</span>
-          </label>
-          <label>
-            <input type="radio" name="tipo" value="ingreso">
-            <span>Ingreso</span>
-          </label>
-        </div>
-
-        <label>Monto (COP)
-          <input type="text" id="monto" inputmode="numeric" placeholder="0" required>
-        </label>
-
-        <div class="fila-2">
-          <label>Categoría
-            <select id="categoria"></select>
-          </label>
-
-          <label>Fecha
-            <input type="date" id="fecha" required>
-          </label>
-        </div>
-
-        <label>Nota (opcional)
-          <input type="text" id="nota" placeholder="Ej: almuerzo">
-        </label>
-
-        <button type="submit">Guardar</button>
-      </form>
-
-      <section>
-        <h2>Movimientos</h2>
-        <p class="ayuda">Toca un movimiento para editarlo o eliminarlo.</p>
-        <ul id="lista">
-          <li class="vacio">Aún no hay movimientos</li>
-        </ul>
-      </section>
     </div>
+
+    <!-- Botón flotante para registrar (solo en Registro) -->
+    <button type="button" id="btn-nuevo" class="fab" aria-label="Registrar movimiento">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>
+    </button>
 
     <!-- ========== GRÁFICOS ========== -->
     <div id="vista-graficos" hidden>
+      <h1 class="titulo-vista">Gráficos</h1>
       <div class="filtros">
         <label class="selector-mes">Mes
           <input type="month" id="mes">
@@ -114,30 +140,197 @@
 
       <div class="tarjeta" id="resumen"></div>
 
+      <div class="tarjeta" id="tarjeta-ahorro-graficos" hidden>
+        <h2>Tus ahorros mes a mes</h2>
+        <div id="grafico-ahorro-graficos"></div>
+      </div>
+
       <div class="tarjeta">
-        <h2>Ingresos y gastos</h2>
+        <h2>Gastos por categoría</h2>
         <div id="grafico"></div>
+      </div>
+    </div>
+
+    <!-- ========== AHORRO ========== -->
+    <div id="vista-ahorro" hidden>
+      <h1 class="titulo-vista">Ahorro</h1>
+
+      <!-- Resumen de las metas: una barra por meta. Las tarjetas completas viven en su propia ventana -->
+      <div class="tarjeta" id="resumen-metas" hidden>
+        <div class="tarjeta-cabeza">
+          <h2 id="titulo-metas-resumen" tabindex="-1">Mis metas</h2>
+          <button type="button" class="plan-ver" id="btn-ver-metas">
+            <span id="btn-ver-metas-texto">Ver todas</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+        </div>
+        <div class="metas-total" id="metas-total"></div>
+        <div class="metas-barras" id="metas-barras"></div>
+        <p class="metas-leyenda" id="metas-leyenda"><span class="metas-leyenda-marca" aria-hidden="true"></span>La rayita marca dónde deberías ir hoy</p>
+        <button type="button" class="plan-pendientes" id="metas-aviso" hidden></button>
+      </div>
+
+      <div class="tarjeta">
+        <h2 id="titulo-proyecta" tabindex="-1">Proyecta tu ahorro</h2>
+        <p class="ayuda">Elige cada cuánto vas a guardar y cuánto. Te mostramos cuánto juntas con el tiempo.</p>
+
+        <div class="tipo" role="radiogroup" aria-label="Cada cuánto ahorras">
+          <label>
+            <input type="radio" name="plan-frecuencia" value="diario">
+            <span>Diario</span>
+          </label>
+          <label>
+            <input type="radio" name="plan-frecuencia" value="semanal">
+            <span>Semanal</span>
+          </label>
+          <label>
+            <input type="radio" name="plan-frecuencia" value="mensual">
+            <span>Mensual</span>
+          </label>
+        </div>
+
+        <div class="campos-plan">
+          <label class="selector-mes"><span id="plan-monto-etiqueta">Cuánto por semana</span>
+            <input type="text" id="plan-monto" inputmode="numeric" placeholder="$0" aria-describedby="plan-monto-error">
+          </label>
+          <label class="selector-mes">Durante
+            <select id="plan-meses">
+              <option value="1">1 mes</option>
+              <option value="3">3 meses</option>
+              <option value="6">6 meses</option>
+              <option value="12">1 año</option>
+              <option value="24">2 años</option>
+              <option value="36">3 años</option>
+              <option value="60">5 años</option>
+            </select>
+          </label>
+        </div>
+        <p id="plan-monto-error" class="error error-suelto" hidden></p>
+
+        <label class="check-historial" id="plan-incluir-fila" hidden>
+          <input type="checkbox" id="plan-incluir">
+          <span id="plan-incluir-texto">Sumar lo que ya tengo ahorrado</span>
+        </label>
+
+        <div id="proyeccion" class="proyeccion" aria-live="polite"></div>
+
+        <!-- Aceptar la proyección: se vuelve un ahorro en curso -->
+        <div id="plan-aceptar" class="plan-aceptar" hidden>
+          <label class="selector-mes">Motivo del ahorro
+            <input type="text" id="plan-motivo" maxlength="40" autocomplete="off" placeholder="Ej: Viaje, moto, emergencias">
+          </label>
+          <label class="selector-mes" id="plan-lugar-fila" hidden>Dónde lo vas a guardar
+            <select id="plan-lugar"></select>
+          </label>
+          <button type="button" class="btn-principal btn-ancho" id="btn-empezar">Empezar este ahorro</button>
+          <p class="ayuda" id="plan-aceptar-ayuda"></p>
+        </div>
+      </div>
+
+      <div class="tarjeta" id="tarjeta-ahorro-ahorro" hidden>
+        <h2>Cómo va tu ahorro</h2>
+        <div id="grafico-ahorro-ahorro"></div>
+      </div>
+
+      <div class="tarjeta">
+        <h2 id="titulo-lugares" tabindex="-1">Dónde ahorro</h2>
+        <div class="total-ahorro" id="total-ahorro-fila" hidden>
+          <span>Total ahorrado</span>
+          <strong id="total-ahorrado">$0</strong>
+        </div>
+        <div id="grafico-lugares" class="grafico-lugares"></div>
+        <p class="ayuda" id="lugares-ayuda" hidden>Toca un lugar para añadir o sacar plata.</p>
+        <div id="lista-lugares"></div>
+        <p class="ayuda" id="lugares-vacio">Anota dónde guardas tu plata: una alcancía, una cuenta, una tarjeta, un CDT…</p>
+        <button type="button" class="btn-sec btn-ancho" id="btn-nuevo-lugar">Añadir lugar</button>
+      </div>
+    </div>
+
+    <!-- ========== VIAJES ========== -->
+    <div id="vista-viajes" hidden>
+      <h1 class="titulo-vista">Viajes</h1>
+
+      <!-- Viajes en curso: cada uno con lo que queda y un botón para anotar gastos -->
+      <div id="viajes-activos"></div>
+
+      <div class="tarjeta" id="tarjeta-planear">
+        <h2 id="titulo-planear" tabindex="-1">Planea un viaje</h2>
+        <p class="ayuda">Elige cuántos días, cuánto quieres gastar por día y con cuánta plata te vas. Esa plata sale de tu disponible y, si te sobra al regresar, la devuelves.</p>
+
+        <label class="selector-mes campo-viaje">A dónde vas
+          <input type="text" id="viaje-nombre" maxlength="40" autocomplete="off" placeholder="Ej: Santa Marta">
+        </label>
+
+        <div class="campo-viaje">
+          <span class="selector-etiqueta" id="viaje-dias-etiqueta">Cuántos días</span>
+          <div class="contador">
+            <button type="button" class="contador-btn" id="viaje-dias-menos" aria-label="Un día menos">−</button>
+            <input type="text" id="viaje-dias" inputmode="numeric" maxlength="2" value="3" autocomplete="off" aria-labelledby="viaje-dias-etiqueta" aria-describedby="viaje-dias-error">
+            <button type="button" class="contador-btn" id="viaje-dias-mas" aria-label="Un día más">+</button>
+          </div>
+          <div class="atajos" id="atajos-dias" role="group" aria-label="Días rápidos">
+            <button type="button" data-dias="2">2 días</button>
+            <button type="button" data-dias="3">3 días</button>
+            <button type="button" data-dias="5">5 días</button>
+            <button type="button" data-dias="7">7 días</button>
+            <button type="button" data-dias="11">11 días</button>
+          </div>
+          <p id="viaje-dias-error" class="error error-suelto" hidden></p>
+        </div>
+
+        <div class="campo-viaje">
+          <label class="selector-mes">Presupuesto por día
+            <input type="text" id="viaje-por-dia" inputmode="numeric" placeholder="$0" autocomplete="off" aria-describedby="viaje-por-dia-error">
+          </label>
+          <div class="atajos" id="atajos-por-dia" role="group" aria-label="Montos por día rápidos">
+            <button type="button" data-monto="30000">$30.000</button>
+            <button type="button" data-monto="50000">$50.000</button>
+            <button type="button" data-monto="80000">$80.000</button>
+            <button type="button" data-monto="100000">$100.000</button>
+          </div>
+          <p id="viaje-por-dia-error" class="error error-suelto" hidden></p>
+        </div>
+
+        <div class="fila-2 campo-viaje">
+          <label class="selector-mes">Con cuánto viajas
+            <input type="text" id="viaje-llevo" inputmode="numeric" placeholder="$0" autocomplete="off">
+          </label>
+          <label class="selector-mes">Sales el
+            <input type="date" id="viaje-inicio">
+          </label>
+        </div>
+
+        <div id="viaje-resumen" class="proyeccion" aria-live="polite"></div>
+        <button type="button" class="btn-principal btn-ancho" id="btn-empezar-viaje">Empezar viaje</button>
+      </div>
+
+      <div class="tarjeta" id="tarjeta-anteriores" hidden>
+        <h2 id="titulo-anteriores" tabindex="-1">Viajes anteriores</h2>
+        <div id="viajes-anteriores"></div>
       </div>
     </div>
 
     <!-- ========== AJUSTES ========== -->
     <div id="vista-ajustes" hidden>
+      <h1 class="titulo-vista">Ajustes</h1>
       <div class="tarjeta">
-        <h2>Categorías de gastos</h2>
+        <h2 id="titulo-cats-gasto" tabindex="-1">Categorías de gastos</h2>
         <div id="cats-gasto"></div>
         <div class="agregar-cat">
-          <input type="text" id="nueva-gasto" placeholder="Nueva categoría">
+          <input type="text" id="nueva-gasto" placeholder="Nueva categoría" maxlength="40" aria-label="Nueva categoría de gasto" aria-describedby="nueva-gasto-error">
           <button type="button" class="btn-mini" data-agregar="gasto">Añadir</button>
         </div>
+        <p id="nueva-gasto-error" class="error" hidden></p>
       </div>
 
       <div class="tarjeta">
-        <h2>Categorías de ingresos</h2>
+        <h2 id="titulo-cats-ingreso" tabindex="-1">Categorías de ingresos</h2>
         <div id="cats-ingreso"></div>
         <div class="agregar-cat">
-          <input type="text" id="nueva-ingreso" placeholder="Nueva categoría">
+          <input type="text" id="nueva-ingreso" placeholder="Nueva categoría" maxlength="40" aria-label="Nueva categoría de ingreso" aria-describedby="nueva-ingreso-error">
           <button type="button" class="btn-mini" data-agregar="ingreso">Añadir</button>
         </div>
+        <p id="nueva-ingreso-error" class="error" hidden></p>
       </div>
 
       <div class="tarjeta">
@@ -154,23 +347,38 @@
   </main>
 
   <!-- ========== PESTAÑAS ========== -->
-  <nav class="tabs">
-    <button type="button" class="tab activa" data-vista="registro">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <nav class="tabs" aria-label="Secciones">
+    <button type="button" class="tab activa" data-vista="registro" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="9"></circle>
         <path d="M12 8v8M8 12h8"></path>
       </svg>
       Registro
     </button>
     <button type="button" class="tab" data-vista="graficos">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="9"></circle>
         <path d="M12 12V3M12 12h9"></path>
       </svg>
       Gráficos
     </button>
+    <button type="button" class="tab" data-vista="ahorro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <ellipse cx="12" cy="6.5" rx="7" ry="3"></ellipse>
+        <path d="M5 6.5v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"></path>
+        <path d="M5 11.5v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"></path>
+      </svg>
+      Ahorro
+    </button>
+    <button type="button" class="tab" data-vista="viajes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <rect x="4" y="7" width="16" height="12" rx="2.5"></rect>
+        <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M9 11v4M15 11v4"></path>
+      </svg>
+      Viajes
+    </button>
     <button type="button" class="tab" data-vista="ajustes">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path>
         <circle cx="15" cy="7" r="2"></circle>
         <circle cx="9" cy="17" r="2"></circle>
@@ -179,13 +387,13 @@
     </button>
   </nav>
 
-  <!-- ========== HOJA PARA EDITAR ========== -->
+  <!-- ========== HOJA PARA REGISTRAR Y EDITAR ========== -->
   <div id="hoja" class="hoja" hidden>
-    <div class="hoja-fondo" id="hoja-fondo"></div>
-    <form id="form-editar" class="hoja-panel">
-      <h3>Editar movimiento</h3>
+    <div class="hoja-fondo" id="hoja-fondo" aria-hidden="true"></div>
+    <form id="form-editar" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-editar">
+      <h3 id="titulo-editar" tabindex="-1">Editar movimiento</h3>
 
-      <div class="tipo">
+      <div class="tipo" role="radiogroup" aria-label="Tipo de movimiento">
         <label>
           <input type="radio" name="tipo-edit" value="gasto">
           <span>Gasto</span>
@@ -196,9 +404,10 @@
         </label>
       </div>
 
-      <label>Monto (COP)
-        <input type="text" id="edit-monto" inputmode="numeric" required>
+      <label>Monto
+        <input type="text" id="edit-monto" inputmode="numeric" placeholder="0" aria-describedby="edit-monto-error">
       </label>
+      <p id="edit-monto-error" class="error" hidden></p>
 
       <div class="fila-2">
         <label>Categoría
@@ -210,17 +419,331 @@
       </div>
 
       <label>Nota (opcional)
-        <input type="text" id="edit-nota">
+        <input type="text" id="edit-nota" placeholder="Ej: almuerzo" maxlength="120">
       </label>
 
-      <button type="submit">Guardar cambios</button>
+      <p class="error hoja-error" role="alert" hidden></p>
+      <button type="submit" id="edit-guardar">Guardar cambios</button>
 
-      <div class="fila-2">
+      <div class="fila-2" id="edit-acciones">
         <button type="button" class="btn-sec" id="edit-cancelar">Cancelar</button>
         <button type="button" class="btn-peligro" id="edit-eliminar">Eliminar</button>
       </div>
     </form>
   </div>
+
+  <!-- ========== HOJA PARA RENOMBRAR O BORRAR UNA CATEGORÍA ========== -->
+  <div id="hoja-cat" class="hoja" hidden>
+    <div class="hoja-fondo" id="hoja-cat-fondo" aria-hidden="true"></div>
+    <form id="form-cat" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-cat" novalidate>
+      <h3 id="titulo-cat" tabindex="-1">Categoría de gasto</h3>
+
+      <label>Nombre
+        <input type="text" id="cat-nombre" maxlength="40" autocomplete="off" aria-describedby="cat-nombre-error cat-usos">
+      </label>
+      <p id="cat-nombre-error" class="error" hidden></p>
+      <p id="cat-usos" class="ayuda"></p>
+
+      <p class="error hoja-error" role="alert" hidden></p>
+      <button type="submit">Guardar nombre</button>
+
+      <div class="fila-2">
+        <button type="button" class="btn-sec" id="cat-cancelar">Cancelar</button>
+        <button type="button" class="btn-peligro" id="cat-borrar">Borrar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ========== VENTANA CON TODAS LAS METAS ========== -->
+  <div id="ventana-metas" class="ventana" role="dialog" aria-modal="true" aria-labelledby="titulo-ventana-metas" hidden>
+    <header class="ventana-cabeza">
+      <button type="button" class="ventana-volver" id="metas-volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"></path></svg>
+        Ahorro
+      </button>
+    </header>
+    <div class="ventana-cuerpo">
+      <h1 class="titulo-vista" id="titulo-ventana-metas" tabindex="-1">Mis metas</h1>
+      <p class="ayuda ventana-sub" id="metas-cuenta"></p>
+      <!-- Ahorros en curso: cada uno con su botón para confirmar el depósito -->
+      <div id="mis-planes"></div>
+      <button type="button" class="btn-sec btn-ancho" id="btn-nueva-meta">Crear otra meta</button>
+    </div>
+  </div>
+
+  <!-- ========== VENTANA DE UN VIAJE ========== -->
+  <div id="ventana-viaje" class="ventana" role="dialog" aria-modal="true" aria-labelledby="titulo-ventana-viaje" hidden>
+    <header class="ventana-cabeza">
+      <button type="button" class="ventana-volver" id="viaje-volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"></path></svg>
+        Viajes
+      </button>
+    </header>
+    <div class="ventana-cuerpo">
+      <h1 class="titulo-vista" id="titulo-ventana-viaje" tabindex="-1">Viaje</h1>
+      <p class="ayuda ventana-sub" id="viaje-sub"></p>
+
+      <div class="tarjeta viaje-saldo" id="viaje-saldo"></div>
+      <button type="button" class="btn-principal btn-ancho" id="btn-gasto-viaje">Anotar un gasto</button>
+
+      <div class="tarjeta">
+        <h2>Gasto por día</h2>
+        <div id="viaje-grafico-dias"></div>
+      </div>
+
+      <div class="tarjeta" id="viaje-tarjeta-rueda">
+        <h2>En qué se te fue la plata</h2>
+        <div id="viaje-rueda"></div>
+      </div>
+
+      <div class="tarjeta">
+        <h2 id="titulo-gastos-viaje" tabindex="-1">Gastos del viaje</h2>
+        <p class="ayuda" id="viaje-gastos-ayuda" hidden>Toca un gasto para editarlo o eliminarlo.</p>
+        <div id="viaje-gastos"></div>
+        <p class="ayuda" id="viaje-gastos-vacio">Todavía no anotas gastos. Cada vez que pagues algo, anótalo aquí y te descontamos de lo que llevas.</p>
+      </div>
+
+      <div class="tarjeta">
+        <h2 id="titulo-caja-viaje" tabindex="-1">La plata del viaje</h2>
+        <div id="viaje-caja"></div>
+        <div class="fila-botones" id="viaje-caja-botones">
+          <button type="button" class="btn-sec" id="btn-viaje-mas">Llevar más</button>
+          <button type="button" class="btn-sec btn-volver-plata" id="btn-viaje-devolver">Regresé</button>
+        </div>
+        <button type="button" class="btn-sec btn-ancho" id="btn-viaje-reabrir" hidden>Reabrir viaje</button>
+      </div>
+
+      <div class="fila-botones">
+        <button type="button" class="btn-sec" id="btn-viaje-editar">Editar viaje</button>
+        <button type="button" class="btn-peligro" id="btn-viaje-eliminar">Eliminar viaje</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== HOJA PARA UN GASTO DEL VIAJE ========== -->
+  <div id="hoja-gv" class="hoja" hidden>
+    <div class="hoja-fondo" id="hoja-gv-fondo" aria-hidden="true"></div>
+    <form id="form-gv" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-gv" novalidate>
+      <div class="mover-titulos">
+        <h3 id="titulo-gv" tabindex="-1">Gasto del viaje</h3>
+        <small id="gv-queda"></small>
+      </div>
+
+      <label>Monto
+        <input type="text" id="gv-monto" inputmode="numeric" placeholder="$0" autocomplete="off" aria-describedby="gv-monto-error">
+      </label>
+      <p id="gv-monto-error" class="error" hidden></p>
+
+      <fieldset class="grupo-cats">
+        <legend>En qué</legend>
+        <div class="chips-cat" id="gv-cats"></div>
+      </fieldset>
+      <label id="gv-otra-fila" hidden>Nuevo motivo
+        <input type="text" id="gv-otra" maxlength="30" autocomplete="off" placeholder="Ej: Propinas" aria-describedby="gv-otra-error">
+      </label>
+      <p id="gv-otra-error" class="error" hidden></p>
+
+      <div class="fila-2">
+        <label>Día
+          <select id="gv-dia"></select>
+        </label>
+        <label>Nota (opcional)
+          <input type="text" id="gv-nota" maxlength="80" autocomplete="off" placeholder="Ej: almuerzo">
+        </label>
+      </div>
+
+      <p class="error hoja-error" role="alert" hidden></p>
+      <button type="submit" id="gv-guardar">Guardar gasto</button>
+
+      <div class="fila-2" id="gv-acciones">
+        <button type="button" class="btn-sec" id="gv-cancelar">Cancelar</button>
+        <button type="button" class="btn-peligro" id="gv-eliminar">Eliminar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ========== HOJA PARA LLEVAR MÁS O DEVOLVER PLATA DEL VIAJE ========== -->
+  <div id="hoja-caja" class="hoja" hidden>
+    <div class="hoja-fondo" id="hoja-caja-fondo" aria-hidden="true"></div>
+    <form id="form-caja" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-caja" novalidate>
+      <div class="mover-titulos">
+        <h3 id="titulo-caja" tabindex="-1">Llevar más plata</h3>
+        <small id="caja-texto"></small>
+      </div>
+      <div class="mover-saldo caja-saldo">
+        <span id="caja-saldo-etiqueta">Te queda del viaje</span>
+        <strong id="caja-saldo">$0</strong>
+      </div>
+
+      <label>Cuánto
+        <input type="text" id="caja-monto" inputmode="numeric" placeholder="$0" autocomplete="off" aria-describedby="caja-monto-error caja-queda">
+      </label>
+      <p id="caja-monto-error" class="error" hidden></p>
+      <p class="mover-queda" id="caja-queda" aria-live="polite"></p>
+
+      <p class="error hoja-error" role="alert" hidden></p>
+      <button type="submit" id="caja-guardar">Llevar</button>
+      <button type="button" class="btn-sec" id="caja-cancelar">Cancelar</button>
+    </form>
+  </div>
+
+  <!-- ========== HOJA PARA EDITAR UN VIAJE ========== -->
+  <div id="hoja-ev" class="hoja" hidden>
+    <div class="hoja-fondo" id="hoja-ev-fondo" aria-hidden="true"></div>
+    <form id="form-ev" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-ev" novalidate>
+      <h3 id="titulo-ev" tabindex="-1">Editar viaje</h3>
+      <label>A dónde vas
+        <input type="text" id="ev-nombre" maxlength="40" autocomplete="off">
+      </label>
+      <div class="fila-2">
+        <label>Días
+          <input type="text" id="ev-dias" inputmode="numeric" maxlength="2" autocomplete="off" aria-describedby="ev-dias-error">
+        </label>
+        <label>Sales el
+          <input type="date" id="ev-inicio">
+        </label>
+      </div>
+      <p id="ev-dias-error" class="error" hidden></p>
+      <label>Presupuesto por día
+        <input type="text" id="ev-por-dia" inputmode="numeric" placeholder="$0" autocomplete="off" aria-describedby="ev-por-dia-error">
+      </label>
+      <p id="ev-por-dia-error" class="error" hidden></p>
+      <p class="error hoja-error" role="alert" hidden></p>
+      <button type="submit">Guardar cambios</button>
+      <button type="button" class="btn-sec" id="ev-cancelar">Cancelar</button>
+    </form>
+  </div>
+
+  <!-- ========== HOJA PARA AÑADIR O SACAR PLATA DE UN LUGAR ========== -->
+  <div id="hoja-mover" class="hoja" hidden>
+    <div class="hoja-fondo" id="hoja-mover-fondo" aria-hidden="true"></div>
+    <form id="form-mover" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-mover" novalidate>
+      <div class="mover-cabeza">
+        <span class="avatar avatar-ahorro" id="mover-avatar" aria-hidden="true"></span>
+        <div class="mover-titulos">
+          <h3 id="titulo-mover" tabindex="-1">Alcancía</h3>
+          <small id="mover-detalle"></small>
+        </div>
+      </div>
+      <div class="mover-saldo">
+        <span>Tienes ahí</span>
+        <strong id="mover-saldo">$0</strong>
+      </div>
+
+      <div class="tipo" role="radiogroup" aria-label="Qué pasó con la plata">
+        <label>
+          <input type="radio" name="mover-tipo" value="entra" checked>
+          <span>Añadí</span>
+        </label>
+        <label>
+          <input type="radio" name="mover-tipo" value="sale">
+          <span>Saqué o gasté</span>
+        </label>
+      </div>
+
+      <label>Cuánto
+        <input type="text" id="mover-monto" inputmode="numeric" placeholder="$0" autocomplete="off" aria-describedby="mover-monto-error mover-queda">
+      </label>
+      <p id="mover-monto-error" class="error" hidden></p>
+      <p class="mover-queda" id="mover-queda" aria-live="polite"></p>
+
+      <p class="error hoja-error" role="alert" hidden></p>
+      <button type="submit" id="mover-guardar">Añadir</button>
+
+      <h4 class="subtitulo-hoja" id="mover-hist-titulo">Últimos cambios</h4>
+      <div id="mover-historial" class="lista-historial"></div>
+
+      <div class="fila-2">
+        <button type="button" class="btn-sec" id="mover-cerrar">Cerrar</button>
+        <button type="button" class="btn-sec" id="mover-editar">Editar lugar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ========== HOJA PARA UN LUGAR DE AHORRO ========== -->
+  <div id="hoja-lugar" class="hoja" hidden>
+    <div class="hoja-fondo" id="hoja-lugar-fondo" aria-hidden="true"></div>
+    <form id="form-lugar" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-lugar" novalidate>
+      <h3 id="titulo-lugar" tabindex="-1">Nuevo lugar de ahorro</h3>
+
+      <label>Dónde
+        <select id="lugar-tipo">
+          <option>Alcancía</option>
+          <option>Cuenta de ahorros</option>
+          <option>Tarjeta</option>
+          <option>CDT</option>
+          <option>Bolsillo digital</option>
+          <option>Efectivo</option>
+          <option>Otro</option>
+        </select>
+      </label>
+
+      <label>Nombre (opcional)
+        <input type="text" id="lugar-nombre" placeholder="Ej: Alcancía del cuarto" maxlength="40" autocomplete="off">
+      </label>
+
+      <label>Cuánto tienes ahí
+        <input type="text" id="lugar-saldo" inputmode="numeric" placeholder="$0" aria-describedby="lugar-saldo-error">
+      </label>
+      <p id="lugar-saldo-error" class="error" hidden></p>
+
+      <div class="fila-2" id="lugar-cdt" hidden>
+        <label>Tasa E.A. (%)
+          <input type="text" id="lugar-tasa" inputmode="decimal" placeholder="Ej: 10,5" maxlength="6" aria-describedby="lugar-tasa-error">
+        </label>
+        <label>Vence
+          <input type="date" id="lugar-vence">
+        </label>
+      </div>
+      <p id="lugar-tasa-error" class="error" hidden></p>
+
+      <p class="error hoja-error" role="alert" hidden></p>
+      <button type="submit" id="lugar-guardar">Guardar</button>
+
+      <div class="fila-2" id="lugar-acciones">
+        <button type="button" class="btn-sec" id="lugar-cancelar">Cancelar</button>
+        <button type="button" class="btn-peligro" id="lugar-eliminar">Eliminar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ========== HOJA CON EL DETALLE DE UN AHORRO ========== -->
+  <div id="hoja-plan" class="hoja" hidden>
+    <div class="hoja-fondo" id="hoja-plan-fondo" aria-hidden="true"></div>
+    <form id="form-plan" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-plan">
+      <h3 id="titulo-plan" tabindex="-1">Ahorro</h3>
+      <p class="ayuda plan-resumen" id="plan-resumen"></p>
+
+      <h4 class="subtitulo-hoja">Premios</h4>
+      <div id="plan-premios" class="premios"></div>
+
+      <h4 class="subtitulo-hoja">Depósitos</h4>
+      <p class="ayuda plan-resumen">Toca uno para marcarlo como hecho o quitarlo.</p>
+      <div id="plan-depositos" class="lista-depositos"></div>
+
+      <p class="error hoja-error" role="alert" hidden></p>
+      <div class="fila-2">
+        <button type="button" class="btn-sec" id="plan-cerrar">Cerrar</button>
+        <button type="button" class="btn-peligro" id="plan-eliminar">Eliminar ahorro</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ========== FELICITACIÓN AL LOGRAR UN PREMIO ========== -->
+  <div id="celebra" class="celebra" hidden>
+    <div class="celebra-fondo" id="celebra-fondo" aria-hidden="true"></div>
+    <div class="confeti" id="confeti" aria-hidden="true"></div>
+    <div class="celebra-caja" role="dialog" aria-modal="true" aria-labelledby="celebra-titulo" aria-describedby="celebra-texto">
+      <div class="celebra-icono" id="celebra-icono" aria-hidden="true"></div>
+      <span class="celebra-etiqueta" id="celebra-etiqueta">Nuevo premio</span>
+      <h3 id="celebra-titulo" tabindex="-1"></h3>
+      <p id="celebra-texto"></p>
+      <button type="button" class="btn-principal" id="celebra-ok">¡Sigamos!</button>
+    </div>
+  </div>
+
+  <!-- Anuncios para lectores de pantalla (siempre presente) -->
+  <div id="anuncio" class="solo-lector" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ========== AVISO CON DESHACER ========== -->
   <div id="toast" class="toast" hidden>

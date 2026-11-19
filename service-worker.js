@@ -1,4 +1,4 @@
-const VERSION = "v2";
+const VERSION = "v16";
 const CACHE = "finanzas-" + VERSION;
 
 const ARCHIVOS = [
@@ -9,7 +9,9 @@ const ARCHIVOS = [
   "./manifest.json",
   "./icon-180.png",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./assets/fonts/manrope-latin.woff2",
+  "./assets/fonts/manrope-latin-ext.woff2"
 ];
 
 self.addEventListener("install", (e) => {
