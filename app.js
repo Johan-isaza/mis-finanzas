@@ -31,6 +31,65 @@ const COLORES_GASTO = [1, 2, 3, 4, 5, 6].map(function (n) {
   return "var(--grafico-" + n + ")";
 });
 
+// Palabra clave (sin tildes, en minúscula) → emoji. Gana la primera que aparezca en el nombre.
+const RS_EMOJIS = [
+  ["mercado", "🛒"], ["supermerc", "🛒"], ["restaur", "🍽️"], ["almuerzo", "🍱"], ["desayuno", "🥐"],
+  ["cafe", "☕"], ["domicilio", "🛵"], ["rappi", "🛵"], ["comida", "🍔"], ["aliment", "🍎"], ["snack", "🍿"],
+  ["bebida", "🥤"], ["licor", "🍻"], ["cerveza", "🍺"], ["gasolina", "⛽"], ["combustible", "⛽"],
+  ["taxi", "🚕"], ["uber", "🚕"], ["didi", "🚕"], ["moto", "🏍️"], ["carro", "🚗"], ["parque", "🅿️"],
+  ["peaje", "🛣️"], ["bus", "🚌"], ["metro", "🚇"], ["transporte", "🚌"], ["vuelo", "✈️"], ["viaje", "✈️"],
+  ["arriendo", "🏠"], ["alquiler", "🏠"], ["hogar", "🏠"], ["casa", "🏡"], ["servicio", "💡"], ["luz", "💡"],
+  ["agua", "🚰"], ["internet", "📶"], ["celular", "📱"], ["telefono", "📱"], ["gas", "🔥"],
+  ["salud", "💊"], ["medic", "🩺"], ["farmacia", "💊"], ["droguer", "💊"], ["odonto", "🦷"], ["gym", "🏋️"],
+  ["gimnasio", "🏋️"], ["deporte", "⚽"], ["ocio", "🎉"], ["fiesta", "🎉"], ["salida", "🥳"], ["cine", "🎬"],
+  ["juego", "🎮"], ["netflix", "📺"], ["spotify", "🎧"], ["suscrip", "📺"], ["streaming", "📺"],
+  ["ropa", "👕"], ["zapato", "👟"], ["compra", "🛍️"], ["belleza", "💅"], ["peluquer", "💇"], ["cuidado", "🧴"],
+  ["educa", "📚"], ["estudio", "📚"], ["universidad", "🎓"], ["colegio", "🎒"], ["curso", "📚"], ["libro", "📖"],
+  ["mascota", "🐶"], ["perro", "🐶"], ["gato", "🐱"], ["regalo", "🎁"], ["donac", "🤝"], ["deuda", "💳"],
+  ["tarjeta", "💳"], ["credito", "💳"], ["prestamo", "🏦"], ["banco", "🏦"], ["impuesto", "🧾"], ["seguro", "🛡️"],
+  ["tecno", "💻"], ["computador", "💻"], ["hijo", "🧸"], ["bebe", "🍼"], ["familia", "👨‍👩‍👧"], ["pareja", "❤️"],
+  ["salario", "💰"], ["sueldo", "💰"], ["nomina", "💰"], ["quincena", "💵"], ["prima", "🎁"], ["bono", "🎁"], ["venta", "🏷️"], ["negocio", "🏪"], ["freelance", "💻"], ["interes", "📈"], ["arriendo", "🏠"], ["weed", "🌿"], ["trabajo", "💼"], ["oficina", "💼"], ["ahorro", "🐷"], ["inversion", "📈"], ["otro", "📦"]
+];
+const RS_EMOJI_RESERVA = ["💸", "🧩", "🪙", "🔖", "🌀", "⭐"];
+
+function rsSinTildes(t) {
+  return t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function rsEmoji(nombre) {
+  const n = rsSinTildes(nombre);
+  const hit = RS_EMOJIS.find(function (par) { return n.indexOf(par[0]) !== -1; });
+  if (hit) return hit[1];
+  let h = 0;
+  for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+  return RS_EMOJI_RESERVA[h % RS_EMOJI_RESERVA.length];
+}
+
+// El emoji de una categoría: el que eligió la persona o, si no eligió, uno según el nombre
+function emojiDe(tipo, nombre) {
+  const propios = datos && datos.emojis && datos.emojis[tipo];
+  return (propios && propios[nombre]) || rsEmoji(nombre);
+}
+
+// Nombre con su emoji, para listas desplegables
+function conEmoji(tipo, nombre) {
+  return emojiDe(tipo, nombre) + "  " + nombre;
+}
+
+// Emojis para elegir al crear o editar una categoría
+const EMOJIS_ELEGIR = [
+  "🍔", "🍕", "🌮", "🍣", "🍱", "🥗", "🍎", "🛒", "☕", "🍺", "🍷", "🥤", "🍿", "🍰",
+  "🚌", "🚕", "🚗", "🏍️", "⛽", "🚇", "✈️", "🅿️",
+  "🏠", "💡", "🚰", "📶", "📱", "🔥", "🧹", "🛋️",
+  "💊", "🩺", "🦷", "🏋️", "⚽", "🧘",
+  "🎉", "🎬", "🎮", "🎧", "📺", "🎟️", "🎤",
+  "👕", "👟", "🛍️", "💅", "💇", "🧴",
+  "📚", "🎓", "🎒", "💻",
+  "🐶", "🐱", "🎁", "❤️", "👶",
+  "💳", "🏦", "🧾", "🛡️", "💼", "📈", "🐷",
+  "💰", "💵", "🪙", "🏷️", "🌿", "🍃", "🚬", "📦", "⭐"
+];
+
 // ---------- Datos ----------
 const CLAVE = "finanzas-datos";
 
@@ -49,6 +108,8 @@ function datosVacios() {
     ahorro: ahorroVacio(),
     viajes: [],
     categoriasViaje: CATS_VIAJE.slice(),
+    emojis: { gasto: {}, ingreso: {} },
+    semillas: [],
     ultimoRespaldo: null,
     // Cuándo se registró el primer movimiento (para pedir el primer respaldo a tiempo)
     inicio: null
@@ -102,7 +163,9 @@ function ahorroVacio() {
     plan: { monto: 0, frecuencia: "semanal", meses: 12, incluir: true },
     lugares: [],
     // Ahorros aceptados: se confirma cada depósito y se ganan premios
-    planes: []
+    planes: [],
+    // Traspasos de lugares ya eliminados: siguen contando en la liquidez
+    cerrados: []
   };
 }
 
@@ -164,11 +227,32 @@ function normalizarAhorro(a) {
             })
         };
       }),
-    planes: (Array.isArray(a.planes) ? a.planes : []).map(normalizarPlan).filter(Boolean)
+    planes: (Array.isArray(a.planes) ? a.planes : []).map(normalizarPlan).filter(Boolean),
+    cerrados: (Array.isArray(a.cerrados) ? a.cerrados : [])
+      .filter(function (c) {
+        return c && typeof c.fecha === "string" && Number(c.monto) && isFinite(Number(c.monto));
+      })
+      .slice(0, MAX_HISTORIAL)
+      .map(function (c) {
+        return { fecha: c.fecha, monto: Number(c.monto), lugarId: c.lugarId || null };
+      })
   };
 }
 
 // Revisa que lo que viene (guardado o importado) tenga la forma correcta
+function normalizarEmojis(e) {
+  const r = { gasto: {}, ingreso: {} };
+  if (!e || typeof e !== "object") return r;
+  ["gasto", "ingreso"].forEach(function (tipo) {
+    const t = e[tipo];
+    if (!t || typeof t !== "object") return;
+    Object.keys(t).forEach(function (k) {
+      if (typeof t[k] === "string" && t[k].trim() && t[k].length <= 16) r[tipo][k] = t[k].trim();
+    });
+  });
+  return r;
+}
+
 function normalizar(obj) {
   if (!obj || !Array.isArray(obj.movimientos)) return null;
   const base = datosVacios();
@@ -209,6 +293,8 @@ function normalizar(obj) {
     categoriasViaje: Array.isArray(obj.categoriasViaje) && obj.categoriasViaje.length
       ? obj.categoriasViaje.filter(function (c) { return typeof c === "string" && c.trim(); }).map(function (c) { return c.trim().slice(0, 30); })
       : CATS_VIAJE.slice(),
+    emojis: normalizarEmojis(obj.emojis),
+    semillas: Array.isArray(obj.semillas) ? obj.semillas.filter(function (x) { return typeof x === "string"; }) : [],
     ultimoRespaldo: obj.ultimoRespaldo || null,
     inicio: obj.inicio || null
   };
@@ -368,7 +454,7 @@ function llenarCategorias(select, tipo, actual) {
   nombres.forEach(function (n) {
     const op = document.createElement("option");
     op.value = n;
-    op.textContent = n;
+    op.textContent = conEmoji(tipo, n);
     select.appendChild(op);
   });
   if (previo && nombres.indexOf(previo) !== -1) select.value = previo;
@@ -392,7 +478,7 @@ function llenarFiltro() {
   todas.forEach(function (c) {
     const op = document.createElement("option");
     op.value = c;
-    op.textContent = c;
+    op.textContent = conEmoji(datos.categorias.ingreso.indexOf(c) !== -1 && datos.categorias.gasto.indexOf(c) === -1 ? "ingreso" : "gasto", c);
     filtroCategoria.appendChild(op);
   });
   filtroCategoria.value = todas.indexOf(previo) !== -1 ? previo : "";
@@ -499,11 +585,11 @@ function mostrar(idResaltado) {
     boton.className = "mov";
     boton.dataset.id = m.id;
 
-    // Círculo con la inicial de la categoría
+    // Círculo con el emoji de la categoría
     const avatar = document.createElement("span");
-    avatar.className = "avatar";
+    avatar.className = "avatar avatar-emoji";
     avatar.setAttribute("aria-hidden", "true");
-    avatar.textContent = (m.categoria.trim().charAt(0) || "?").toUpperCase();
+    avatar.textContent = emojiDe(m.tipo, m.categoria);
 
     const info = document.createElement("div");
     const titulo = document.createElement("strong");
@@ -560,6 +646,9 @@ function alAhorro(prefijo) {
     l.historial.forEach(function (h) {
       if (esTraspaso(h) && h.fecha.startsWith(prefijo)) total += h.monto;
     });
+  });
+  datos.ahorro.cerrados.forEach(function (c) {
+    if (c.fecha.startsWith(prefijo)) total += c.monto;
   });
   return total;
 }
@@ -730,7 +819,8 @@ const ultimoUsado = { tipo: "gasto", categoria: { gasto: "", ingreso: "" } };
 const FONDO_HOJA = [document.querySelector("main"), document.querySelector(".tabs"), toast];
 const ventanaMetas = document.getElementById("ventana-metas");
 const ventanaViaje = document.getElementById("ventana-viaje");
-const VENTANAS = [ventanaMetas, ventanaViaje];
+const ventanaResumen = document.getElementById("ventana-resumen");
+const VENTANAS = [ventanaMetas, ventanaViaje, ventanaResumen];
 
 function modoHoja(nuevo) {
   document.getElementById("titulo-editar").textContent = nuevo ? "Nuevo movimiento" : "Editar movimiento";
@@ -946,6 +1036,7 @@ document.addEventListener("keydown", function (e) {
   else if (!hojaEv.hidden) cerrarEditarViaje();
   else if (!ventanaMetas.hidden) cerrarMetas();
   else if (!ventanaViaje.hidden) cerrarViaje();
+  else if (!ventanaResumen.hidden) cerrarResumen();
 });
 
 document.querySelectorAll('input[name="tipo-edit"]').forEach(function (r) {
@@ -1126,7 +1217,7 @@ function dibujarRueda(gas) {
 
     const n = document.createElement("span");
     n.className = "nombre";
-    n.textContent = fila[0];
+    n.textContent = emojiDe("gasto", fila[0]) + " " + fila[0];
 
     const valor = document.createElement("span");
     valor.className = "leyenda-valor";
@@ -1203,11 +1294,16 @@ function dibujarCategorias() {
       fila.dataset.nombre = nombre;
       fila.setAttribute("aria-label", nombre + ", " + usos.toLowerCase() + ". Editar");
 
+      const icono = document.createElement("span");
+      icono.className = "fila-cat-emoji";
+      icono.setAttribute("aria-hidden", "true");
+      icono.textContent = emojiDe(tipo, nombre);
+
       const etiqueta = document.createElement("span");
       etiqueta.className = "fila-cat-nombre";
       etiqueta.textContent = nombre;
 
-      fila.appendChild(etiqueta);
+      fila.append(icono, etiqueta);
       // El número solo aparece si hay algo que contar
       if (usosDe(tipo, nombre) > 0) {
         const cuenta = document.createElement("span");
@@ -1252,12 +1348,18 @@ function agregarCategoria(tipo) {
     return;
   }
 
+  const emoji = selectorNuevo[tipo].valor() || rsEmoji(nombre);
+  const emojiAntes = datos.emojis[tipo][nombre];
   datos.categorias[tipo].push(nombre);
+  datos.emojis[tipo][nombre] = emoji;
   if (!guardar()) {
     datos.categorias[tipo].pop();
+    if (emojiAntes) datos.emojis[tipo][nombre] = emojiAntes;
+    else delete datos.emojis[tipo][nombre];
     return;
   }
   input.value = "";
+  selectorNuevo[tipo].poner("", true);
   refrescarTodo();
   anunciar("Categoría " + nombre + " añadida");
 }
@@ -1269,6 +1371,8 @@ function abrirCategoria(tipo, nombre) {
   document.getElementById("titulo-cat").textContent =
     tipo === "gasto" ? "Categoría de gasto" : "Categoría de ingreso";
   catNombre.value = nombre;
+  selectorCat.poner(emojiDe(tipo, nombre));
+  selectorCat.cerrar();
   marcarError(catNombre, "");
   limpiarErrorHoja(formCat);
   catUsos.textContent =
@@ -1309,7 +1413,21 @@ formCat.addEventListener("submit", function (e) {
     catNombre.focus();
     return;
   }
+  const emojiNuevo = selectorCat.valor() || emojiDe(tipo, viejo);
+  const emojiViejo = datos.emojis[tipo][viejo];
   if (nuevo === viejo) {
+    if (emojiNuevo !== emojiDe(tipo, viejo)) {
+      datos.emojis[tipo][viejo] = emojiNuevo;
+      if (!guardar()) {
+        if (emojiViejo) datos.emojis[tipo][viejo] = emojiViejo;
+        else delete datos.emojis[tipo][viejo];
+        return;
+      }
+      refrescarTodo();
+      cerrarCategoria(filaCategoria(tipo, viejo));
+      anunciar("Emoji de " + viejo + " cambiado");
+      return;
+    }
     cerrarCategoria();
     return;
   }
@@ -1326,6 +1444,8 @@ formCat.addEventListener("submit", function (e) {
   const presupuesto = tipo === "gasto" ? datos.presupuestos[viejo] : undefined;
 
   datos.categorias[tipo][i] = nuevo;
+  datos.emojis[tipo][nuevo] = emojiNuevo;
+  delete datos.emojis[tipo][viejo];
   cambiados.forEach(function (m) {
     m.categoria = nuevo;
   });
@@ -1337,6 +1457,8 @@ formCat.addEventListener("submit", function (e) {
   // Si no se pudo guardar, todo vuelve como estaba y la hoja sigue abierta
   if (!guardar()) {
     datos.categorias[tipo][i] = viejo;
+    delete datos.emojis[tipo][nuevo];
+    if (emojiViejo) datos.emojis[tipo][viejo] = emojiViejo;
     cambiados.forEach(function (m) {
       m.categoria = viejo;
     });
@@ -1412,6 +1534,101 @@ document.querySelectorAll("[data-agregar]").forEach(function (boton) {
     marcarError(input, "");
   });
 });
+
+// ---------- Selector de emoji ----------
+// boton: el que muestra el emoji y abre/cierra la cuadrícula; panel: donde se dibuja.
+// sugerir(): emoji según el nombre mientras la persona no haya elegido uno.
+function crearSelectorEmoji(boton, panel, sugerir) {
+  let elegido = "";
+  let manual = false;
+
+  function pintar() {
+    boton.textContent = elegido || (sugerir && sugerir()) || "🙂";
+    boton.setAttribute("aria-label", "Emoji: " + boton.textContent + ". Cambiar");
+    panel.querySelectorAll(".emoji-op").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.textContent === boton.textContent));
+    });
+  }
+
+  function cerrar() {
+    panel.hidden = true;
+    boton.setAttribute("aria-expanded", "false");
+  }
+
+  function elegir(e) {
+    elegido = e;
+    manual = true;
+    pintar();
+    cerrar();
+    boton.focus();
+  }
+
+  const grid = el("div", "emoji-grid");
+  EMOJIS_ELEGIR.forEach(function (e) {
+    const b = el("button", "emoji-op", e);
+    b.type = "button";
+    b.addEventListener("click", function () { elegir(e); });
+    grid.appendChild(b);
+  });
+  const otro = el("label", "emoji-otro");
+  otro.append(el("span", "", "¿Otro? Escríbelo con el teclado de emojis"));
+  const campo = document.createElement("input");
+  campo.type = "text";
+  campo.maxLength = 16;
+  campo.placeholder = "😀";
+  campo.autocomplete = "off";
+  campo.addEventListener("input", function () {
+    // Solo el primer emoji de lo que se escriba
+    const partes = Array.from(new Intl.Segmenter("es", { granularity: "grapheme" }).segment(campo.value.trim()));
+    const primero = partes.length ? partes[0].segment : "";
+    if (primero && /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(primero)) {
+      campo.value = "";
+      elegir(primero);
+    }
+  });
+  otro.appendChild(campo);
+  panel.append(grid, otro);
+  panel.hidden = true;
+  boton.setAttribute("aria-expanded", "false");
+
+  boton.addEventListener("click", function () {
+    const abrir = panel.hidden;
+    panel.hidden = !abrir;
+    boton.setAttribute("aria-expanded", String(abrir));
+    if (abrir) {
+      const actual = panel.querySelector('.emoji-op[aria-pressed="true"]') || panel.querySelector(".emoji-op");
+      actual.focus();
+    }
+  });
+
+  pintar();
+  return {
+    valor: function () { return manual ? elegido : ""; },
+    poner: function (e, comoSugerido) {
+      elegido = comoSugerido ? "" : e;
+      manual = !comoSugerido && !!e;
+      pintar();
+    },
+    refrescar: function () { if (!manual) pintar(); },
+    cerrar: cerrar
+  };
+}
+
+const selectorNuevo = {};
+["gasto", "ingreso"].forEach(function (tipo) {
+  const input = document.getElementById("nueva-" + tipo);
+  selectorNuevo[tipo] = crearSelectorEmoji(
+    document.getElementById("emoji-nueva-" + tipo),
+    document.getElementById("panel-emoji-" + tipo),
+    function () { return input.value.trim() ? rsEmoji(input.value.trim()) : "🙂"; }
+  );
+  input.addEventListener("input", function () { selectorNuevo[tipo].refrescar(); });
+});
+const selectorCat = crearSelectorEmoji(
+  document.getElementById("cat-emoji"),
+  document.getElementById("panel-emoji-cat"),
+  null
+);
 
 // ---------- Ahorro ----------
 const planMonto = document.getElementById("plan-monto");
@@ -2346,6 +2563,7 @@ function dibujarDetallePlan() {
 
 function abrirPlan(id) {
   planAbierto = id;
+  mostrarBorrarPlan(false);
   limpiarErrorHoja(document.getElementById("form-plan"));
   focoAntesDePlan = document.activeElement;
   hojaPlan.hidden = false;
@@ -2377,24 +2595,78 @@ document.getElementById("hoja-plan-fondo").addEventListener("click", function ()
   cerrarPlan();
 });
 
-document.getElementById("plan-eliminar").addEventListener("click", function () {
+function mostrarBorrarPlan(activo) {
+  document.getElementById("plan-borrar").hidden = !activo;
+  document.getElementById("plan-acciones").hidden = activo;
+}
+
+// Lo depositado en un lugar que todavía existe
+function depositadoEnLugar(p) {
+  if (!buscarLugar(p.lugarId)) return 0;
+  return Object.keys(p.depositos).length * p.monto;
+}
+
+function eliminarPlan(devolver) {
   const i = datos.ahorro.planes.findIndex(function (p) {
     return p.id === planAbierto;
   });
   if (i === -1) return;
-  const eliminado = datos.ahorro.planes.splice(i, 1)[0];
+  const eliminado = datos.ahorro.planes[i];
+  const lugar = buscarLugar(eliminado.lugarId);
+  const lugarAntes = lugar ? { saldo: lugar.saldo, historial: lugar.historial.slice() } : null;
+  const devuelto = devolver ? depositadoEnLugar(eliminado) : 0;
+  // Devolver: cada depósito sale del lugar y vuelve al disponible
+  if (devuelto) Object.keys(eliminado.depositos).forEach(function () { moverSaldo(eliminado, -1); });
+  datos.ahorro.planes.splice(i, 1);
+  function restaurarLugar() {
+    if (lugar && lugarAntes) {
+      lugar.saldo = lugarAntes.saldo;
+      lugar.historial = lugarAntes.historial.slice();
+    }
+  }
   if (!guardar()) {
     datos.ahorro.planes.splice(i, 0, eliminado);
+    restaurarLugar();
     return;
   }
+  mostrarBorrarPlan(false);
   cerrarPlan(document.getElementById(ventanaMetas.hidden ? "titulo-proyecta" : "titulo-ventana-metas"));
   dibujarAhorro();
-  // Lo ya depositado sigue en su lugar de ahorro: borrar el plan no saca la plata
+  const queda = depositadoEnLugar(eliminado);
   mostrarToast("Ahorro eliminado", "Deshacer", function () {
     datos.ahorro.planes.splice(Math.min(i, datos.ahorro.planes.length), 0, eliminado);
+    restaurarLugar();
     guardar();
     dibujarAhorro();
-  }, eliminado.motivo + " · lo depositado sigue en su lugar");
+  }, eliminado.motivo + (devuelto
+    ? " · " + dinero(devuelto) + " volvió a tu disponible"
+    : queda ? " · lo depositado sigue en su lugar" : ""));
+}
+
+document.getElementById("plan-eliminar").addEventListener("click", function () {
+  const p = buscarPlan(planAbierto);
+  if (!p) return;
+  const depositado = depositadoEnLugar(p);
+  if (!depositado) {
+    eliminarPlan(false);
+    return;
+  }
+  const lugar = buscarLugar(p.lugarId);
+  document.getElementById("plan-borrar-texto").textContent =
+    "Ya depositaste " + dinero(depositado) + " en " + (lugar.nombre || lugar.tipo) + " para este ahorro. ¿Qué hago con esa plata?";
+  document.getElementById("plan-borrar-devolver").textContent = "Devolver " + dinero(depositado) + " a mi disponible";
+  mostrarBorrarPlan(true);
+  document.getElementById("plan-borrar-texto").focus();
+});
+document.getElementById("plan-borrar-devolver").addEventListener("click", function () {
+  eliminarPlan(true);
+});
+document.getElementById("plan-borrar-dejar").addEventListener("click", function () {
+  eliminarPlan(false);
+});
+document.getElementById("plan-borrar-cancelar").addEventListener("click", function () {
+  mostrarBorrarPlan(false);
+  document.getElementById("plan-eliminar").focus();
 });
 
 // --- Felicitaciones ---
@@ -2665,6 +2937,12 @@ function abrirLugar(id) {
   marcarError(lugarTasa, "");
   limpiarErrorHoja(formLugar);
   mostrarCamposCdt();
+  saldoAlAbrir = l ? l.saldo : 0;
+  // Si hay plata disponible, por defecto sale de ahí; si no, ya estaba ahorrada
+  document.querySelector('input[name="lugar-origen"][value="' +
+    (disponibleTotal() > 0 ? "disponible" : "fuera") + '"]').checked = true;
+  mostrarOrigen();
+  mostrarBorrarLugar(false);
 
   focoAntesDeLugar = document.activeElement;
   hojaLugar.hidden = false;
@@ -2685,6 +2963,37 @@ function cerrarLugar(devolverA) {
   if (destino && document.contains(destino)) destino.focus({ preventScroll: true });
   lugarEditando = null;
   focoAntesDeLugar = null;
+}
+
+let saldoAlAbrir = 0;
+
+function saldoEscrito() {
+  return Number(lugarSaldo.value.replace(/\D/g, "")) || 0;
+}
+
+// Pregunta de dónde sale la plata nueva (o a dónde va la que se quita)
+// y muestra cómo queda el disponible
+function mostrarOrigen() {
+  const dif = saldoEscrito() - saldoAlAbrir;
+  const caja = document.getElementById("lugar-origen");
+  caja.hidden = dif === 0;
+  if (!dif) return;
+  const entra = dif > 0;
+  document.getElementById("lugar-origen-titulo").textContent = entra
+    ? "¿De dónde sale " + (saldoAlAbrir ? "lo que añades" : "esta plata") + "?"
+    : "¿A dónde va lo que quitas?";
+  document.getElementById("lugar-origen-a").textContent = entra ? "De mi disponible" : "Vuelve a mi disponible";
+  document.getElementById("lugar-origen-b").textContent = entra ? "Ya la tenía ahorrada" : "Ya no la tengo";
+  const disp = disponibleTotal();
+  const ayuda = document.getElementById("lugar-origen-ayuda");
+  if (tipoSeleccionado("lugar-origen") === "disponible") {
+    ayuda.textContent = "Tu plata disponible pasa de " + conSigno(disp) + " a " + conSigno(disp - dif) + "." +
+      (entra && disp - dif < 0 ? " Ojo: no te alcanza; si ya la tenías aparte, elige la otra opción." : "");
+  } else {
+    ayuda.textContent = entra
+      ? "Tu disponible se queda en " + conSigno(disp) + ": solo anotas plata que ya tenías guardada."
+      : "Tu disponible se queda en " + conSigno(disp) + ": solo corriges lo que hay en este lugar.";
+  }
 }
 
 function leerTasa() {
@@ -2708,14 +3017,20 @@ formLugar.addEventListener("submit", function (e) {
   const valores = {
     tipo: lugarTipo.value,
     nombre: lugarNombre.value.trim().slice(0, 40),
-    saldo: Number(lugarSaldo.value.replace(/\D/g, "")) || 0,
+    saldo: saldoEscrito(),
     tasa: esCdt ? tasa : 0,
     vence: esCdt ? lugarVence.value : ""
   };
 
+  // Lo que sale del disponible es un traspaso; lo que ya estaba ahorrado, no
+  const delDisponible = tipoSeleccionado("lugar-origen") === "disponible";
+
   if (lugarEditando === null) {
     const nuevo = Object.assign({ id: Date.now(), historial: [] }, valores);
-    if (nuevo.saldo > 0) anotarCambio(nuevo, nuevo.saldo, "Saldo inicial", true);
+    if (nuevo.saldo > 0) {
+      if (delDisponible) anotarCambio(nuevo, nuevo.saldo, "Desde mi disponible");
+      else anotarCambio(nuevo, nuevo.saldo, "Saldo inicial", true);
+    }
     datos.ahorro.lugares.push(nuevo);
     if (!guardar()) {
       datos.ahorro.lugares.pop();
@@ -2723,7 +3038,8 @@ formLugar.addEventListener("submit", function (e) {
     }
     dibujarAhorro();
     cerrarLugar(document.querySelector('.fila-lugar[data-id="' + nuevo.id + '"]'));
-    mostrarToast("Lugar de ahorro guardado", "", null, (nuevo.nombre || nuevo.tipo) + " · " + dinero(nuevo.saldo));
+    mostrarToast("Lugar de ahorro guardado", "", null, (nuevo.nombre || nuevo.tipo) + " · " + dinero(nuevo.saldo) +
+      (nuevo.saldo && delDisponible ? " salió de tu disponible" : ""));
     return;
   }
 
@@ -2732,7 +3048,11 @@ formLugar.addEventListener("submit", function (e) {
   });
   if (!l) return;
   const antes = Object.assign({}, l, { historial: l.historial.slice() });
-  if (valores.saldo !== l.saldo) anotarCambio(l, valores.saldo - l.saldo, "Ajuste del saldo", true);
+  if (valores.saldo !== l.saldo) {
+    const dif = valores.saldo - l.saldo;
+    if (delDisponible) anotarCambio(l, dif, dif > 0 ? "Desde mi disponible" : "A mi disponible");
+    else anotarCambio(l, dif, "Ajuste del saldo", true);
+  }
   Object.assign(l, valores);
   if (!guardar()) {
     Object.assign(l, antes);
@@ -2743,23 +3063,68 @@ formLugar.addEventListener("submit", function (e) {
   anunciar("Cambios guardados");
 });
 
-document.getElementById("lugar-eliminar").addEventListener("click", function () {
+// Al eliminar un lugar con plata se pregunta qué pasa con ella
+function mostrarBorrarLugar(activo) {
+  document.getElementById("lugar-borrar").hidden = !activo;
+  document.getElementById("lugar-acciones").hidden = activo;
+  document.getElementById("lugar-guardar").hidden = activo;
+}
+
+function eliminarLugar(devolver) {
   const i = datos.ahorro.lugares.findIndex(function (x) {
     return x.id === lugarEditando;
   });
   if (i === -1) return;
-  const eliminado = datos.ahorro.lugares.splice(i, 1)[0];
+  const eliminado = datos.ahorro.lugares[i];
+  // Los traspasos de su historial siguen contando: la plata que salió del
+  // disponible no vuelve sola. Si se devuelve, se anota la salida de hoy.
+  const quedan = eliminado.historial.filter(esTraspaso).map(function (h) {
+    return { fecha: h.fecha, monto: h.monto, lugarId: eliminado.id };
+  });
+  if (devolver && eliminado.saldo > 0) quedan.unshift({ fecha: hoy(), monto: -eliminado.saldo, lugarId: eliminado.id });
+  const cerradosAntes = datos.ahorro.cerrados.slice();
+  datos.ahorro.lugares.splice(i, 1);
+  datos.ahorro.cerrados = quedan.concat(datos.ahorro.cerrados).slice(0, MAX_HISTORIAL);
   if (!guardar()) {
     datos.ahorro.lugares.splice(i, 0, eliminado);
+    datos.ahorro.cerrados = cerradosAntes;
     return;
   }
   dibujarAhorro();
   cerrarLugar(document.getElementById("titulo-lugares"));
   mostrarToast("Lugar eliminado", "Deshacer", function () {
     datos.ahorro.lugares.splice(Math.min(i, datos.ahorro.lugares.length), 0, eliminado);
+    datos.ahorro.cerrados = cerradosAntes;
     guardar();
     dibujarAhorro();
-  }, (eliminado.nombre || eliminado.tipo) + " · " + dinero(eliminado.saldo));
+  }, (eliminado.nombre || eliminado.tipo) +
+    (eliminado.saldo ? " · " + dinero(eliminado.saldo) + (devolver ? " volvió a tu disponible" : " ya no se cuenta") : ""));
+}
+
+document.getElementById("lugar-eliminar").addEventListener("click", function () {
+  const l = datos.ahorro.lugares.find(function (x) {
+    return x.id === lugarEditando;
+  });
+  if (!l) return;
+  if (!l.saldo) {
+    eliminarLugar(false);
+    return;
+  }
+  document.getElementById("lugar-borrar-texto").textContent =
+    "En " + (l.nombre || l.tipo) + " tienes " + dinero(l.saldo) + ". ¿Qué pasa con esa plata?";
+  document.getElementById("lugar-borrar-devolver").textContent = "Pasar " + dinero(l.saldo) + " a mi disponible";
+  mostrarBorrarLugar(true);
+  document.getElementById("lugar-borrar-texto").focus();
+});
+document.getElementById("lugar-borrar-devolver").addEventListener("click", function () {
+  eliminarLugar(true);
+});
+document.getElementById("lugar-borrar-perder").addEventListener("click", function () {
+  eliminarLugar(false);
+});
+document.getElementById("lugar-borrar-cancelar").addEventListener("click", function () {
+  mostrarBorrarLugar(false);
+  document.getElementById("lugar-eliminar").focus();
 });
 
 document.getElementById("btn-nuevo-lugar").addEventListener("click", function () {
@@ -2774,6 +3139,10 @@ document.getElementById("hoja-lugar-fondo").addEventListener("click", function (
 lugarTipo.addEventListener("change", mostrarCamposCdt);
 lugarSaldo.addEventListener("input", function () {
   formatearMonto(lugarSaldo);
+  mostrarOrigen();
+});
+document.querySelectorAll('input[name="lugar-origen"]').forEach(function (r) {
+  r.addEventListener("change", mostrarOrigen);
 });
 lugarTasa.addEventListener("input", function () {
   marcarError(lugarTasa, "");
@@ -4137,6 +4506,16 @@ filtroCategoria.addEventListener("change", mostrarGraficos);
 todoHistorial.addEventListener("change", mostrarGraficos);
 
 // ---------- Inicio ----------
+// Categoría pedida: "Weed" 🌿 (una sola vez; si luego se borra, no vuelve)
+// Solo a quien ya tenía datos; en una instalación nueva queda marcada sin añadirla.
+if (datos.semillas.indexOf("weed") === -1) {
+  if (datos.movimientos.length > 0) {
+    if (!existeCategoria("gasto", "Weed")) datos.categorias.gasto.push("Weed");
+    if (!datos.emojis.gasto.Weed) datos.emojis.gasto.Weed = "🌿";
+  }
+  datos.semillas.push("weed");
+  guardar();
+}
 inputMes.value = hoy().slice(0, 7);
 dibujarCategorias();
 actualizarInfoRespaldo();
@@ -4144,3 +4523,474 @@ viajeInicio.value = hoy();
 mostrar();
 dibujarAhorro();
 dibujarViajes();
+
+// ---------- Resumen de gastos (ventana desde Gráficos) ----------
+// Un resumen "para mirar con calma": total, desglose por categoría con emoji,
+// lo más destacado y, si son varios meses, cómo fue cada mes.
+const RS_COLORES = ["#fb7185", "#fbbf24", "#34d399", "#38bdf8", "#a78bfa", "#f472b6", "#fb923c", "#2dd4bf", "#818cf8", "#a3e635"];
+
+// "2026-11" ± n meses
+function rsMes(ym, n) {
+  const p = ym.split("-");
+  const d = new Date(Number(p[0]), Number(p[1]) - 1 + n, 1);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+function rsMesesEntre(desde, hasta) {
+  const lista = [];
+  for (let m = desde; m <= hasta && lista.length < 240; m = rsMes(m, 1)) lista.push(m);
+  return lista;
+}
+
+function rsMesCorto(ym, conAnio) {
+  const p = ym.split("-");
+  const d = new Date(Number(p[0]), Number(p[1]) - 1, 1);
+  const t = mayuscula(d.toLocaleDateString("es-CO", { month: "short" }).replace(".", ""));
+  return conAnio ? t + " " + p[0] : t;
+}
+
+function rsNombreRango(desde, hasta) {
+  if (desde === hasta) return mayuscula(nombreMes(desde).replace(" de ", " "));
+  const mismoAnio = desde.slice(0, 4) === hasta.slice(0, 4);
+  return rsMesCorto(desde, !mismoAnio) + " – " + rsMesCorto(hasta, true);
+}
+
+const RS_PERIODOS = [
+  { id: "mes", texto: "Este mes", emoji: "📅" },
+  { id: "pasado", texto: "Mes pasado", emoji: "⏪" },
+  { id: "2m", texto: "2 meses", emoji: "✌️" },
+  { id: "3m", texto: "3 meses", emoji: "🗓️" },
+  { id: "6m", texto: "6 meses", emoji: "📆" },
+  { id: "anio", texto: "Este año", emoji: "🎆" },
+  { id: "rango", texto: "Elegir", emoji: "🎯" }
+];
+let rsPeriodo = "mes";
+const rsDesde = document.getElementById("rs-desde");
+const rsHasta = document.getElementById("rs-hasta");
+
+function rsRango() {
+  const actual = hoy().slice(0, 7);
+  switch (rsPeriodo) {
+    case "pasado": return [rsMes(actual, -1), rsMes(actual, -1)];
+    case "2m": return [rsMes(actual, -1), actual];
+    case "3m": return [rsMes(actual, -2), actual];
+    case "6m": return [rsMes(actual, -5), actual];
+    case "anio": return [actual.slice(0, 4) + "-01", actual];
+    case "rango": {
+      let a = rsDesde.value || actual;
+      let b = rsHasta.value || a;
+      if (a > b) { const t = a; a = b; b = t; }
+      return [a, b];
+    }
+    default: return [actual, actual];
+  }
+}
+
+function rsCalcular(desde, hasta) {
+  const gastos = datos.movimientos.filter(function (m) {
+    const ym = m.fecha.slice(0, 7);
+    return m.tipo === "gasto" && ym >= desde && ym <= hasta;
+  });
+  const ingresos = datos.movimientos.reduce(function (s, m) {
+    const ym = m.fecha.slice(0, 7);
+    return m.tipo === "ingreso" && ym >= desde && ym <= hasta ? s + m.monto : s;
+  }, 0);
+
+  const cats = {};
+  const dias = {};
+  const meses = {};
+  let mayor = null;
+  gastos.forEach(function (m) {
+    const c = cats[m.categoria] || (cats[m.categoria] = { nombre: m.categoria, total: 0, n: 0 });
+    c.total += m.monto;
+    c.n++;
+    dias[m.fecha] = (dias[m.fecha] || 0) + m.monto;
+    const ym = m.fecha.slice(0, 7);
+    meses[ym] = (meses[ym] || 0) + m.monto;
+    if (!mayor || m.monto > mayor.monto) mayor = m;
+  });
+  const filas = Object.values(cats).sort(function (a, b) { return b.total - a.total; });
+  const total = filas.reduce(function (s, c) { return s + c.total; }, 0);
+
+  let diaTop = null;
+  Object.keys(dias).forEach(function (d) {
+    if (!diaTop || dias[d] > diaTop[1]) diaTop = [d, dias[d]];
+  });
+
+  // Días que cuenta el promedio: si el periodo llega hasta hoy, solo los que ya pasaron
+  const inicio = leerFecha(desde + "-01");
+  const finMes = leerFecha(rsMes(hasta, 1) + "-01");
+  finMes.setDate(finMes.getDate() - 1);
+  const tope = leerFecha(hoy());
+  const fin = finMes < tope ? finMes : tope;
+  const nDias = Math.max(1, Math.round((fin - inicio) / 86400000) + 1);
+
+  const lista = rsMesesEntre(desde, hasta);
+  let aAhorro = 0;
+  let aViaje = 0;
+  lista.forEach(function (ym) {
+    aAhorro += alAhorro(ym);
+    aViaje += aViajes(ym);
+  });
+
+  return {
+    filas: filas, total: total, ingresos: ingresos, n: gastos.length,
+    diaTop: diaTop, mayor: mayor, promedio: Math.round(total / nDias),
+    meses: lista.map(function (ym) { return [ym, meses[ym] || 0]; }),
+    aAhorro: aAhorro, aViaje: aViaje
+  };
+}
+
+function rsDibujarPeriodos() {
+  const cont = document.getElementById("rs-periodos");
+  cont.innerHTML = "";
+  RS_PERIODOS.forEach(function (p) {
+    const b = el("button", "rs-chip");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", String(p.id === rsPeriodo));
+    const emo = el("span", "rs-chip-emoji", p.emoji);
+    emo.setAttribute("aria-hidden", "true");
+    b.append(emo, el("span", "", p.texto));
+    b.addEventListener("click", function () {
+      rsPeriodo = p.id;
+      if (p.id === "rango" && !rsDesde.value) {
+        rsDesde.value = rsMes(hoy().slice(0, 7), -1);
+        rsHasta.value = hoy().slice(0, 7);
+      }
+      rsDibujarPeriodos();
+      rsDibujar();
+      cont.querySelector('[aria-checked="true"]').focus();
+    });
+    cont.appendChild(b);
+  });
+  document.getElementById("rs-rango").hidden = rsPeriodo !== "rango";
+}
+
+function rsFila(etiqueta, valor, clase) {
+  const f = el("div", "rs-mini-fila" + (clase ? " " + clase : ""));
+  f.append(el("span", "", etiqueta), el("strong", "", valor));
+  return f;
+}
+
+function rsDibujar() {
+  const cont = document.getElementById("rs-contenido");
+  cont.innerHTML = "";
+  const rango = rsRango();
+  const desde = rango[0];
+  const hasta = rango[1];
+  const r = rsCalcular(desde, hasta);
+  const nombre = rsNombreRango(desde, hasta);
+  const nMeses = r.meses.length;
+
+  // --- Tarjeta principal ---
+  const hero = el("section", "rs-hero");
+  hero.append(el("p", "rs-hero-periodo", "💸 Gastaste en " + nombre));
+  const monto = el("p", "rs-hero-total");
+  ponerMonto(monto, dinero(r.total));
+  hero.appendChild(monto);
+
+  // Comparación con el mismo número de meses justo antes
+  const antes = rsCalcular(rsMes(desde, -nMeses), rsMes(desde, -1)).total;
+  if (antes > 0 && r.total > 0) {
+    const dif = Math.round(((r.total - antes) / antes) * 100);
+    const quien = nMeses === 1 ? "el mes anterior" : "los " + nMeses + " meses anteriores";
+    let texto;
+    let clase;
+    if (dif === 0) { texto = "😌 Igual que " + quien; clase = "igual"; }
+    else if (dif < 0) { texto = "📉 " + Math.abs(dif) + "% menos que " + quien; clase = "baja"; }
+    else { texto = "📈 " + dif + "% más que " + quien; clase = "sube"; }
+    hero.appendChild(el("p", "rs-comparar " + clase, texto));
+  }
+
+  const mini = el("div", "rs-mini");
+  mini.appendChild(rsFila("💰 Ingresos", dinero(r.ingresos), "ingreso"));
+  if (r.aAhorro) mini.appendChild(rsFila(r.aAhorro > 0 ? "🐷 Pasado al ahorro" : "🐷 Sacado del ahorro", dinero(Math.abs(r.aAhorro))));
+  if (r.aViaje) mini.appendChild(rsFila(r.aViaje > 0 ? "✈️ Llevado a viajes" : "✈️ Te sobró de viajes", dinero(Math.abs(r.aViaje))));
+  const balance = r.ingresos - r.total;
+  mini.appendChild(rsFila(balance >= 0 ? "✅ Te quedó" : "⚠️ Gastaste de más", dinero(Math.abs(balance)), balance >= 0 ? "ingreso" : "gasto"));
+  mini.appendChild(rsFila("🧾 Gastos anotados", String(r.n)));
+  hero.appendChild(mini);
+  cont.appendChild(hero);
+
+  if (r.total === 0) {
+    const vacio = el("div", "tarjeta rs-vacio");
+    const emo = el("span", "rs-vacio-emoji", "🌵");
+    emo.setAttribute("aria-hidden", "true");
+    vacio.append(emo, el("p", "", "No anotaste gastos en " + nombre + "."), el("p", "ayuda", "Prueba con otro periodo o registra tu primer gasto."));
+    cont.appendChild(vacio);
+    return;
+  }
+
+  // --- Por categoría ---
+  const tc = el("section", "tarjeta rs-cats");
+  tc.appendChild(el("h2", "", "🍰 En qué se fue tu plata"));
+
+  const pila = el("div", "rs-pila");
+  pila.setAttribute("aria-hidden", "true");
+  r.filas.forEach(function (c, i) {
+    const t = el("span");
+    t.style.width = (c.total / r.total) * 100 + "%";
+    t.style.background = RS_COLORES[i % RS_COLORES.length];
+    pila.appendChild(t);
+  });
+  tc.appendChild(pila);
+
+  const medallas = ["🥇", "🥈", "🥉"];
+  const ul = el("ul", "rs-lista");
+  r.filas.forEach(function (c, i) {
+    const color = RS_COLORES[i % RS_COLORES.length];
+    const pct = Math.round((c.total / r.total) * 100);
+    const li = el("li", "rs-cat");
+    li.style.setProperty("--c", color);
+    li.style.setProperty("--retraso", Math.min(i, 10) * 50 + "ms");
+
+    const icono = el("span", "rs-cat-icono", emojiDe("gasto", c.nombre));
+    icono.setAttribute("aria-hidden", "true");
+
+    const info = el("div", "rs-cat-info");
+    const linea = el("div", "rs-cat-linea");
+    const nom = el("span", "rs-cat-nombre", c.nombre);
+    if (i < 3 && r.filas.length > 1) {
+      const m = el("span", "rs-medalla", medallas[i]);
+      m.setAttribute("aria-hidden", "true");
+      nom.appendChild(m);
+    }
+    linea.append(nom, el("strong", "rs-cat-monto", dinero(c.total)));
+    const sub = el("div", "rs-cat-sub");
+    sub.append(el("span", "", c.n + (c.n === 1 ? " gasto" : " gastos")), el("span", "rs-cat-pct", pct + "%"));
+    const pista = el("div", "rs-cat-pista");
+    const relleno = el("div", "rs-cat-relleno");
+    relleno.style.width = Math.max((c.total / r.total) * 100, 1) + "%";
+    pista.appendChild(relleno);
+    info.append(linea, pista, sub);
+
+    li.append(icono, info);
+    ul.appendChild(li);
+  });
+  tc.appendChild(ul);
+
+  const tot = el("div", "rs-total");
+  tot.append(el("span", "", "Total gastado"), el("strong", "", dinero(r.total)));
+  tc.appendChild(tot);
+  cont.appendChild(tc);
+
+  // --- Lo más destacado ---
+  const td = el("section", "tarjeta");
+  td.appendChild(el("h2", "", "✨ Lo más destacado"));
+  const grid = el("div", "rs-destacados");
+  function dato(emoji, titulo, valor, detalle) {
+    const d = el("div", "rs-dato");
+    const e = el("span", "rs-dato-emoji", emoji);
+    e.setAttribute("aria-hidden", "true");
+    d.append(e, el("span", "rs-dato-titulo", titulo), el("strong", "rs-dato-valor", valor));
+    if (detalle) d.appendChild(el("span", "rs-dato-detalle", detalle));
+    grid.appendChild(d);
+  }
+  const top = r.filas[0];
+  dato("🏆", "Donde más gastaste", top.nombre, dinero(top.total) + " · " + Math.round((top.total / r.total) * 100) + "%");
+  if (r.diaTop) dato("🔥", "Tu día más caro", fechaCorta(r.diaTop[0]), dinero(r.diaTop[1]));
+  if (r.mayor) dato("💥", "Tu gasto más grande", dinero(r.mayor.monto), r.mayor.nota ? r.mayor.categoria + " · " + r.mayor.nota : r.mayor.categoria);
+  dato("☀️", "Promedio por día", dinero(r.promedio), null);
+  td.appendChild(grid);
+  cont.appendChild(td);
+
+  // --- Mes a mes ---
+  if (nMeses > 1) {
+    const tm = el("section", "tarjeta");
+    tm.appendChild(el("h2", "", "📊 Mes a mes"));
+    const maximo = Math.max.apply(null, r.meses.map(function (x) { return x[1]; })) || 1;
+    const cols = el("div", "rs-meses");
+    cols.setAttribute("role", "img");
+    cols.setAttribute("aria-label", "Gasto por mes: " + r.meses.map(function (x) {
+      return rsMesCorto(x[0], true) + " " + dinero(x[1]);
+    }).join(", "));
+    r.meses.forEach(function (x) {
+      const col = el("div", "rs-mes" + (x[1] === maximo && x[1] > 0 ? " pico" : ""));
+      const pista = el("div", "rs-mes-pista");
+      const barra = el("div", "rs-mes-barra");
+      barra.style.height = Math.max((x[1] / maximo) * 100, 2) + "%";
+      pista.appendChild(barra);
+      col.append(el("span", "rs-mes-valor", x[1] ? dineroCorto(x[1]) : "–"), pista, el("span", "rs-mes-nombre", rsMesCorto(x[0], false)));
+      cols.appendChild(col);
+    });
+    tm.appendChild(cols);
+    cont.appendChild(tm);
+  }
+
+  // --- Compartir como imagen ---
+  const btn = el("button", "btn-principal btn-ancho rs-compartir", "📸 Guardar como imagen");
+  btn.type = "button";
+  btn.addEventListener("click", function () {
+    rsImagen(r, nombre).catch(function () {
+      mostrarToast("No se pudo crear la imagen");
+    });
+  });
+  cont.appendChild(btn);
+}
+
+// Dibuja el resumen en una imagen (con los emojis del teléfono) y la comparte o descarga
+async function rsImagen(r, nombre) {
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  const filas = r.filas.slice(0, 8);
+  if (r.filas.length > 8) {
+    const resto = r.filas.slice(8).reduce(function (s, c) { return s + c.total; }, 0);
+    filas.push({ nombre: "Otras " + (r.filas.length - 8), total: resto, otras: true });
+  }
+  const W = 1080;
+  const H = 620 + filas.length * 132 + 150;
+  const cv = document.createElement("canvas");
+  cv.width = W;
+  cv.height = H;
+  const g = cv.getContext("2d");
+  const fuente = '"Manrope", -apple-system, system-ui, sans-serif';
+
+  g.fillStyle = "#0a0a0c";
+  g.fillRect(0, 0, W, H);
+  const brillo = g.createRadialGradient(W * 0.85, 60, 20, W * 0.85, 60, 700);
+  brillo.addColorStop(0, "rgba(107,120,255,0.38)");
+  brillo.addColorStop(1, "rgba(107,120,255,0)");
+  g.fillStyle = brillo;
+  g.fillRect(0, 0, W, H);
+  const brillo2 = g.createRadialGradient(60, 440, 10, 60, 440, 520);
+  brillo2.addColorStop(0, "rgba(251,113,133,0.22)");
+  brillo2.addColorStop(1, "rgba(251,113,133,0)");
+  g.fillStyle = brillo2;
+  g.fillRect(0, 0, W, H);
+
+  const X = 80;
+  g.textBaseline = "alphabetic";
+  g.fillStyle = "#9d9da8";
+  g.font = "700 34px " + fuente;
+  g.fillText("🧾  Mis Finanzas · Resumen", X, 130);
+  g.fillStyle = "#f2f2f4";
+  g.font = "800 50px " + fuente;
+  g.fillText(nombre, X, 205);
+  g.fillStyle = "#9d9da8";
+  g.font = "600 34px " + fuente;
+  g.fillText("💸 Gastaste", X, 310);
+  g.fillStyle = "#f2f2f4";
+  g.font = "800 124px " + fuente;
+  g.fillText(dinero(r.total), X - 4, 430);
+  g.fillStyle = "#9d9da8";
+  g.font = "600 32px " + fuente;
+  g.fillText("💰 Ingresos " + dinero(r.ingresos) + "   ·   🧾 " + r.n + (r.n === 1 ? " gasto" : " gastos"), X, 505);
+
+  // Barra apilada
+  let x = X;
+  const ancho = W - X * 2;
+  filas.forEach(function (c, i) {
+    const w = (c.total / r.total) * ancho;
+    g.fillStyle = RS_COLORES[i % RS_COLORES.length];
+    rsRedondo(g, x, 550, Math.max(w - 6, 6), 22, 11);
+    g.fill();
+    x += w;
+  });
+
+  let y = 640;
+  filas.forEach(function (c, i) {
+    const color = RS_COLORES[i % RS_COLORES.length];
+    const pct = Math.round((c.total / r.total) * 100);
+    g.fillStyle = color + "33";
+    rsRedondo(g, X, y, 96, 96, 28);
+    g.fill();
+    g.font = "54px " + fuente;
+    g.textAlign = "center";
+    g.fillStyle = "#fff";
+    g.fillText(c.otras ? "➕" : emojiDe("gasto", c.nombre), X + 48, y + 67);
+    g.textAlign = "left";
+
+    g.fillStyle = "#f2f2f4";
+    g.font = "700 38px " + fuente;
+    let nom = c.nombre;
+    while (g.measureText(nom + "…").width > 470 && nom.length > 3) nom = nom.slice(0, -1);
+    if (nom !== c.nombre) nom += "…";
+    g.fillText(nom, X + 124, y + 40);
+    g.textAlign = "right";
+    g.font = "800 38px " + fuente;
+    g.fillText(dinero(c.total), W - X, y + 40);
+    g.fillStyle = "#9d9da8";
+    g.font = "700 28px " + fuente;
+    g.fillText(pct + "%", W - X, y + 88);
+    g.textAlign = "left";
+
+    const px = X + 124;
+    const pw = W - X - 100 - px;
+    g.fillStyle = "#2b2b32";
+    rsRedondo(g, px, y + 66, pw, 14, 7);
+    g.fill();
+    g.fillStyle = color;
+    rsRedondo(g, px, y + 66, Math.max(pw * c.total / r.total, 14), 14, 7);
+    g.fill();
+    y += 132;
+  });
+
+  g.fillStyle = "#232328";
+  g.fillRect(X, y + 6, ancho, 2);
+  g.fillStyle = "#f2f2f4";
+  g.font = "700 40px " + fuente;
+  g.fillText("Total", X, y + 80);
+  g.textAlign = "right";
+  g.font = "800 50px " + fuente;
+  g.fillText(dinero(r.total), W - X, y + 82);
+  g.textAlign = "left";
+
+  const blob = await new Promise(function (ok) { cv.toBlob(ok, "image/png"); });
+  if (!blob) throw new Error("sin imagen");
+  const archivo = "resumen-" + rsSinTildes(nombre).replace(/[^a-z0-9]+/g, "-") + ".png";
+  const file = new File([blob], archivo, { type: "image/png" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: "Resumen " + nombre });
+    } catch (e) {
+      if (e && e.name !== "AbortError") throw e;
+    }
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = archivo;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+}
+
+function rsRedondo(g, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+
+let focoAntesDeResumen = null;
+
+function abrirResumen() {
+  focoAntesDeResumen = document.activeElement;
+  ventanaResumen.hidden = false;
+  document.body.classList.add("con-ventana");
+  fondoInerte(false);
+  rsDibujarPeriodos();
+  rsDibujar();
+  ventanaResumen.scrollTop = 0;
+  document.getElementById("titulo-ventana-resumen").focus({ preventScroll: true });
+}
+
+function cerrarResumen() {
+  if (ventanaResumen.hidden) return;
+  ventanaResumen.hidden = true;
+  document.body.classList.remove("con-ventana");
+  fondoInerte(false);
+  const destino = focoAntesDeResumen && document.contains(focoAntesDeResumen) ? focoAntesDeResumen : document.getElementById("btn-resumen");
+  destino.focus({ preventScroll: true });
+  focoAntesDeResumen = null;
+}
+
+document.getElementById("btn-resumen").addEventListener("click", abrirResumen);
+document.getElementById("resumen-volver").addEventListener("click", function () { cerrarResumen(); });
+rsDesde.addEventListener("change", rsDibujar);
+rsHasta.addEventListener("change", rsDibujar);

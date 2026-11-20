@@ -122,6 +122,14 @@
     <!-- ========== GRÁFICOS ========== -->
     <div id="vista-graficos" hidden>
       <h1 class="titulo-vista">Gráficos</h1>
+      <button type="button" class="btn-resumen" id="btn-resumen">
+        <span class="btn-resumen-emoji" aria-hidden="true">✨</span>
+        <span class="btn-resumen-texto">
+          <strong>Resumen de tus gastos</strong>
+          <small>Del mes, de 2 meses o lo que tú elijas</small>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"></path></svg>
+      </button>
       <div class="filtros">
         <label class="selector-mes">Mes
           <input type="month" id="mes">
@@ -317,20 +325,24 @@
         <h2 id="titulo-cats-gasto" tabindex="-1">Categorías de gastos</h2>
         <div id="cats-gasto"></div>
         <div class="agregar-cat">
+          <button type="button" class="emoji-boton" id="emoji-nueva-gasto" aria-controls="panel-emoji-gasto">🙂</button>
           <input type="text" id="nueva-gasto" placeholder="Nueva categoría" maxlength="40" aria-label="Nueva categoría de gasto" aria-describedby="nueva-gasto-error">
           <button type="button" class="btn-mini" data-agregar="gasto">Añadir</button>
         </div>
         <p id="nueva-gasto-error" class="error" hidden></p>
+        <div class="emoji-panel" id="panel-emoji-gasto" hidden></div>
       </div>
 
       <div class="tarjeta">
         <h2 id="titulo-cats-ingreso" tabindex="-1">Categorías de ingresos</h2>
         <div id="cats-ingreso"></div>
         <div class="agregar-cat">
+          <button type="button" class="emoji-boton" id="emoji-nueva-ingreso" aria-controls="panel-emoji-ingreso">🙂</button>
           <input type="text" id="nueva-ingreso" placeholder="Nueva categoría" maxlength="40" aria-label="Nueva categoría de ingreso" aria-describedby="nueva-ingreso-error">
           <button type="button" class="btn-mini" data-agregar="ingreso">Añadir</button>
         </div>
         <p id="nueva-ingreso-error" class="error" hidden></p>
+        <div class="emoji-panel" id="panel-emoji-ingreso" hidden></div>
       </div>
 
       <div class="tarjeta">
@@ -438,20 +450,54 @@
     <form id="form-cat" class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-cat" novalidate>
       <h3 id="titulo-cat" tabindex="-1">Categoría de gasto</h3>
 
-      <label>Nombre
-        <input type="text" id="cat-nombre" maxlength="40" autocomplete="off" aria-describedby="cat-nombre-error cat-usos">
-      </label>
+      <div class="cat-nombre-fila">
+        <div class="cat-emoji-campo">
+          <span class="cat-etiqueta" aria-hidden="true">Emoji</span>
+          <button type="button" class="emoji-boton" id="cat-emoji" aria-controls="panel-emoji-cat">🙂</button>
+        </div>
+        <label>Nombre
+          <input type="text" id="cat-nombre" maxlength="40" autocomplete="off" aria-describedby="cat-nombre-error cat-usos">
+        </label>
+      </div>
+      <div class="emoji-panel" id="panel-emoji-cat" hidden></div>
       <p id="cat-nombre-error" class="error" hidden></p>
       <p id="cat-usos" class="ayuda"></p>
 
       <p class="error hoja-error" role="alert" hidden></p>
-      <button type="submit">Guardar nombre</button>
+      <button type="submit">Guardar</button>
 
       <div class="fila-2">
         <button type="button" class="btn-sec" id="cat-cancelar">Cancelar</button>
         <button type="button" class="btn-peligro" id="cat-borrar">Borrar</button>
       </div>
     </form>
+  </div>
+
+  <!-- ========== VENTANA DEL RESUMEN DE GASTOS ========== -->
+  <div id="ventana-resumen" class="ventana" role="dialog" aria-modal="true" aria-labelledby="titulo-ventana-resumen" hidden>
+    <header class="ventana-cabeza">
+      <button type="button" class="ventana-volver" id="resumen-volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"></path></svg>
+        Gráficos
+      </button>
+    </header>
+    <div class="ventana-cuerpo">
+      <h1 class="titulo-vista" id="titulo-ventana-resumen" tabindex="-1">Tu resumen 🧾</h1>
+      <p class="ayuda ventana-sub">Elige el periodo y mira en qué se fue tu plata.</p>
+
+      <div class="rs-periodos" role="radiogroup" aria-label="Periodo del resumen" id="rs-periodos"></div>
+
+      <div class="rs-rango" id="rs-rango" hidden>
+        <label class="selector-mes">Desde
+          <input type="month" id="rs-desde">
+        </label>
+        <label class="selector-mes">Hasta
+          <input type="month" id="rs-hasta">
+        </label>
+      </div>
+
+      <div id="rs-contenido" aria-live="polite"></div>
+    </div>
   </div>
 
   <!-- ========== VENTANA CON TODAS LAS METAS ========== -->
@@ -687,6 +733,22 @@
       </label>
       <p id="lugar-saldo-error" class="error" hidden></p>
 
+      <!-- De dónde sale (o a dónde va) la plata: decide si toca el disponible -->
+      <div id="lugar-origen" hidden>
+        <p class="etiqueta-campo" id="lugar-origen-titulo">¿De dónde sale esta plata?</p>
+        <div class="tipo tipo-origen" role="radiogroup" aria-labelledby="lugar-origen-titulo">
+          <label>
+            <input type="radio" name="lugar-origen" value="disponible" checked>
+            <span id="lugar-origen-a">De mi disponible</span>
+          </label>
+          <label>
+            <input type="radio" name="lugar-origen" value="fuera">
+            <span id="lugar-origen-b">Ya la tenía ahorrada</span>
+          </label>
+        </div>
+        <p class="ayuda" id="lugar-origen-ayuda" aria-live="polite"></p>
+      </div>
+
       <div class="fila-2" id="lugar-cdt" hidden>
         <label>Tasa E.A. (%)
           <input type="text" id="lugar-tasa" inputmode="decimal" placeholder="Ej: 10,5" maxlength="6" aria-describedby="lugar-tasa-error">
@@ -703,6 +765,14 @@
       <div class="fila-2" id="lugar-acciones">
         <button type="button" class="btn-sec" id="lugar-cancelar">Cancelar</button>
         <button type="button" class="btn-peligro" id="lugar-eliminar">Eliminar</button>
+      </div>
+
+      <!-- Al eliminar un lugar con plata: ¿vuelve al disponible o ya no se tiene? -->
+      <div class="confirmar-borrar" id="lugar-borrar" hidden>
+        <p class="confirmar-texto" id="lugar-borrar-texto" tabindex="-1"></p>
+        <button type="button" class="btn-principal btn-ancho" id="lugar-borrar-devolver">Pasarla a mi disponible</button>
+        <button type="button" class="btn-sec btn-ancho" id="lugar-borrar-perder">Ya no la tengo, solo eliminar</button>
+        <button type="button" class="btn-sec btn-ancho" id="lugar-borrar-cancelar">Cancelar</button>
       </div>
     </form>
   </div>
@@ -722,9 +792,17 @@
       <div id="plan-depositos" class="lista-depositos"></div>
 
       <p class="error hoja-error" role="alert" hidden></p>
-      <div class="fila-2">
+      <div class="fila-2" id="plan-acciones">
         <button type="button" class="btn-sec" id="plan-cerrar">Cerrar</button>
         <button type="button" class="btn-peligro" id="plan-eliminar">Eliminar ahorro</button>
+      </div>
+
+      <!-- Al eliminar un ahorro con depósitos: ¿devolverlos al disponible? -->
+      <div class="confirmar-borrar" id="plan-borrar" hidden>
+        <p class="confirmar-texto" id="plan-borrar-texto" tabindex="-1"></p>
+        <button type="button" class="btn-principal btn-ancho" id="plan-borrar-devolver">Devolverla a mi disponible</button>
+        <button type="button" class="btn-sec btn-ancho" id="plan-borrar-dejar">Dejarla guardada ahí</button>
+        <button type="button" class="btn-sec btn-ancho" id="plan-borrar-cancelar">Cancelar</button>
       </div>
     </form>
   </div>

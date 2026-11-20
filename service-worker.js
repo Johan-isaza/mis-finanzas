@@ -1,4 +1,4 @@
-const VERSION = "v16";
+const VERSION = "v19";
 const CACHE = "finanzas-" + VERSION;
 
 const ARCHIVOS = [
