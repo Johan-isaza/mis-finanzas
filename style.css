@@ -161,11 +161,12 @@ button { font: inherit; border: none; cursor: pointer; }
   width: 30px;
   height: 30px;
   flex-shrink: 0;
-  color: var(--sobre-accion);
-  background: var(--accion);
+  color: #f2f2f4;
+  background: #1c1c21;
+  border: 1px solid var(--elevado);
   border-radius: 10px;
 }
-.marca-logo svg { width: 18px; height: 18px; }
+.marca-logo svg { width: 16px; height: 20px; }
 
 .hero-label { font-size: 0.9rem; font-weight: 600; color: var(--sobre-banda-suave); }
 .hero-valor {
